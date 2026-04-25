@@ -1,0 +1,24 @@
+@startuml Recuperação de Senha
+actor Usuario
+
+boundary "Tela ForgotPassword" as Tela
+control "ForgotPasswordController" as Controller
+control "PasswordService" as Service
+control "EmailService" as EmailService
+database "BancoDeDados" as BD
+
+
+
+Usuario -> Tela : PreencheEmail(email)
+Tela -> Controller : VerificarEmailValido(email)
+Controller -> Service : ConsultaEmail(Existe, Valido)
+Service -> BD : ConsultaEmail
+BD -> Service : RetornaRegistro
+Service -> EmailService : GerarTokenDispara(Email, Token)
+EmailService -> Service : EmailEnviado
+Service -> Controller : MontaRetornoSucesso()
+Controller -> Tela :  ExibeInformacoesTela()
+Tela -> Usuario : RecebeInstrucoes
+
+
+@enduml

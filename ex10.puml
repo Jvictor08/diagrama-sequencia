@@ -1,0 +1,88 @@
+@startuml Fluxo Completo
+
+actor Usuario
+
+boundary "Tela de Login" as Tela
+
+'controllers'
+control "AuthController" as AuthController
+control "ProdutosController" as ProdController
+control "CompraController" as CompController
+control "PagamentoController" as PagController
+'servicos'
+control "AuthService" as AuthService
+control "ProdutosService" as ProdService
+control "CompraService" as CompService
+control "PagamentoService" as PagService
+
+'database'
+database "BancoDeDados" as BD
+
+'gatewaypagamento'
+boundary "GatewayPagamento" as Gateway
+
+
+' ----- LOGIN NO SISTEMA ----- '
+Usuario -> Tela : Informa usuario
+Tela -> AuthController : login(usuario, senha)
+AuthController -> AuthService : autenticar(usuario, senha)
+
+alt Credenciais validas
+    AuthService -> AuthController : sucesso
+    AuthController -> Tela : loginSucesso()
+    Tela -> Usuario : exibirTelaPrincipal()
+else Credenciais invalidas
+    AuthService -> AuthController : erroAutenticacao
+    AuthController -> Tela : exibirMensagemErro()
+    Tela -> Usuario : permaneceNaTelaLogin()
+end
+
+
+' ----- CONSULTA PRODUTO ----- '
+Usuario -> Tela : informaCodigoProduto(codigo)
+Tela -> ProdController : consultarProduto(codigo)
+ProdController -> ProdService : buscarProduto(codigo)
+ProdService -> BD : consultarProdutoPorCodigo(codigo)
+BD -> ProdService : resultadoConsulta
+
+alt Produto encontrado
+    ProdService --> ProdController : dadosProduto
+    ProdController -> Tela : exibirProduto(dados)
+    Tela -> Usuario : mostrarDadosProduto()
+else Produto não encontrado
+    ProdService --> ProdController : produtoNaoEncontrado
+    ProdController -> Tela : exibirMensagemErro()
+    Tela -> Usuario : informarProdutoInexistente()
+end
+
+' ----- ADICIONA PRODUTOS CARRINHO ----- '
+Usuario -> Tela : SelecionaProduto
+Tela -> CompController : VerificaEstoque(Produto)
+loop Adiciona Novo Produto
+    CompController -> CompService : ConsultaSaldo()
+    CompService -> BD : ConsultaSaldo
+    BD -> CompService : RetornaQtd
+    alt Existe Saldo? Sim
+        CompService -> CompController : AdicionadoCarrinho(Produto, Quantidade)
+        CompService -> BD: Estoque Atualizado
+    else Não
+        CompService -> CompController : SaldoIndisponível
+    end
+    
+end
+CompController -> Tela : CarrinhoAtualizado
+Tela -> Usuario : ExibeProdutosCarrinho
+
+' ----- CONFIRMACAO PAGAMENTO ----- '
+
+Usuario -> Tela : selecionaFormaPagamento(Dados, Metodo)
+Tela -> PagController : ConfirmaPagamento(produtos, infosPagamento)
+PagController -> PagService : EnviaDados(produtos, infosPagamento)
+PagService -> Gateway : EnviaInfosPagamento(DadosCartao, Metodo, Valor)
+
+Gateway -> PagService : MsgRetorno
+PagService -> PagController : RecebeMsgRetorno (Aprovado || Reprovado)
+PagController -> Tela : TrataMsg (Aprovado || Reprovado) 
+Tela -> Usuario : ExibeMsg (Aprovado || Reprovado)
+
+@enduml

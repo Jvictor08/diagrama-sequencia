@@ -1,0 +1,19 @@
+@startuml Pagamento Cartão
+actor Cliente
+
+boundary "Tela de Compra" as Tela
+control "PagamentoController" as Controller
+control "PagamentoService" as Service
+entity "GatewayPagamento" as Gateway
+
+Cliente -> Tela : selecionaFormaPagamento(Dados, Metodo)
+Tela -> Controller : ConfirmaPagamento(produtos, infosPagamento)
+Controller -> Service : EnviaDados(produtos, infosPagamento)
+Service -> Gateway : EnviaInfosPagamento(DadosCartao, Metodo, Valor)
+
+Gateway -> Service : MsgRetorno
+Service -> Controller : RecebeMsgRetorno (Aprovado || Reprovado)
+Controller -> Tela : TrataMsg (Aprovado || Reprovado) 
+Tela -> Cliente : ExibeMsg (Aprovado || Reprovado)
+
+@enduml

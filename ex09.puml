@@ -1,0 +1,30 @@
+@startuml Recuperação de Senha
+actor Usuario
+
+boundary "Tela Produtos" as Tela
+control "PedidoController" as Controller
+control "PedidoService" as Service
+database "BancoDeDados" as BD
+
+
+
+Usuario -> Tela : SelecionaProduto
+Tela -> Controller : VerificaEstoque(Produto)
+loop Adiciona Novo Produto
+    Controller -> Service : ConsultaSaldo()
+    Service -> BD : ConsultaSaldo
+    BD -> Service : RetornaQtd
+    alt Existe Saldo? Sim
+        Service -> Controller : AdicionadoCarrinho(Produto, Quantidade)
+        Service -> BD: Estoque Atualizado
+    else Não
+        Service -> Controller : SaldoIndisponível
+    end
+    
+end
+Controller -> Tela : CarrinhoAtualizado
+Tela -> Usuario : ExibeProdutosCarrinho
+
+
+
+@enduml
